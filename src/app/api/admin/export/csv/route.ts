@@ -21,7 +21,7 @@ export async function GET() {
       designation: e.designation,
       status: e.status,
       dateOfJoining: e.dateOfJoining.toISOString().split("T")[0],
-      officialEmail: e.officialEmail,
+      officialEmail: e.officialEmail || "",
       mobileNumber: e.mobileNumber || "",
       submittedAt: e.submittedAt?.toISOString() || "",
     }))

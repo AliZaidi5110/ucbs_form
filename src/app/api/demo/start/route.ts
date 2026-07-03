@@ -20,6 +20,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Please enter a valid email" }, { status: 400 });
   }
 
+  if (!mobileNumber || !/^[6-9]\d{9}$/.test(mobileNumber)) {
+    return NextResponse.json({ error: "Please enter a valid 10-digit mobile number" }, { status: 400 });
+  }
+
   const suffix = Date.now().toString(36).toUpperCase();
   const employeeId = `DEMO-${suffix}`;
   const slug = personalEmail.split("@")[0].replace(/[^a-z0-9]/gi, ".").slice(0, 20);
@@ -37,7 +41,7 @@ export async function POST(req: Request) {
       workLocation: "Head Office",
       officialEmail: null,
       personalEmail,
-      mobileNumber: mobileNumber || null,
+      mobileNumber,
       status: "INVITED",
     },
   });

@@ -16,6 +16,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "UCBS Employee Onboarding Portal",
   description: "Digital employee onboarding for UCBS — forms, documents, and HR management",
+  icons: {
+    icon: "/ucbs-logo.png",
+    apple: "/ucbs-logo.png",
+  },
 };
 
 export default function RootLayout({
@@ -28,7 +32,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white text-slate-900">
+      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

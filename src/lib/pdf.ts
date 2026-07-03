@@ -71,12 +71,12 @@ export function generateOnboardingPDF(employee: EmployeeRecord): Buffer {
   addSection("Basic Details");
   addField("Employee ID:", d.basic.employeeId);
   addField("Full Name:", d.basic.fullName);
-  addField("Department:", d.basic.department);
-  addField("Designation:", d.basic.designation);
+  addField("Department:", d.basic.department || "—");
+  addField("Designation:", d.basic.designation || "—");
   addField("Reporting Manager:", d.basic.reportingManager || "—");
   addField("Date of Joining:", d.basic.dateOfJoining);
   addField("Work Location:", d.basic.workLocation);
-  addField("Official Email:", d.basic.officialEmail);
+  addField("Official Email:", d.basic.officialEmail || "Pending HR assignment");
   addField("Personal Email:", d.basic.personalEmail);
   addField("Mobile:", d.basic.mobileNumber);
   y += 4;

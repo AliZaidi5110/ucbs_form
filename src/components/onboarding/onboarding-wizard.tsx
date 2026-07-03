@@ -5,8 +5,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { StepIndicator } from "./step-indicator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/card";
+import { PortalFooter, PortalHeader } from "@/components/shared/portal-shell";
+import { HelpBanner } from "./form-field";
 import { ONBOARDING_STEPS } from "@/lib/constants";
 import {
   onboardingFormSchema,
@@ -21,7 +24,7 @@ import {
   StepDocuments,
 } from "./steps-part2";
 import { StepAcknowledgements, StepReview } from "./steps-part3";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, Cloud, Eye, Loader2 } from "lucide-react";
 
 type Props = {
   token: string;
@@ -54,7 +57,7 @@ export function OnboardingWizard({ token, initialData, readOnly, status, employe
           body: JSON.stringify(data),
         });
       } catch {
-        toast.error("Failed to save draft");
+        toast.error("Could not save your progress. Please check your connection.");
       } finally {
         setSaving(false);
       }
@@ -67,9 +70,7 @@ export function OnboardingWizard({ token, initialData, readOnly, status, employe
     let timer: ReturnType<typeof setTimeout>;
     const subscription = form.watch((data) => {
       clearTimeout(timer);
-      timer = setTimeout(() => {
-        saveDraft(data as OnboardingFormData);
-      }, 1500);
+      timer = setTimeout(() => saveDraft(data as OnboardingFormData), 1500);
     });
     return () => {
       subscription.unsubscribe();
@@ -81,14 +82,8 @@ export function OnboardingWizard({ token, initialData, readOnly, status, employe
     const schema = stepSchemas[stepNum as keyof typeof stepSchemas];
     if (!schema) return true;
     const sectionKeys: Record<number, keyof OnboardingFormData> = {
-      1: "basic",
-      2: "personal",
-      3: "identification",
-      4: "education",
-      5: "employment",
-      6: "professional",
-      7: "documents",
-      8: "acknowledgements",
+      1: "basic", 2: "personal", 3: "identification", 4: "education",
+      5: "employment", 6: "professional", 7: "documents", 8: "acknowledgements",
     };
     const key = sectionKeys[stepNum];
     const result = schema.safeParse(form.getValues()[key]);
@@ -97,7 +92,7 @@ export function OnboardingWizard({ token, initialData, readOnly, status, employe
         const path = `${key}.${issue.path.join(".")}` as Parameters<typeof form.setError>[0];
         form.setError(path, { message: issue.message });
       });
-      toast.error("Please fix the errors before continuing");
+      toast.error("Please complete the required fields highlighted below");
       return false;
     }
     return true;
@@ -108,16 +103,15 @@ export function OnboardingWizard({ token, initialData, readOnly, status, employe
       setStep((s) => Math.min(s + 1, 9));
       return;
     }
-    const valid = await validateStep(step);
-    if (!valid) return;
+    if (!(await validateStep(step))) return;
     await saveDraft(form.getValues());
     setStep((s) => Math.min(s + 1, 9));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleSubmit = async () => {
-    const valid = await form.trigger();
-    if (!valid) {
-      toast.error("Please complete all required fields");
+    if (!(await form.trigger())) {
+      toast.error("Please review and complete all required sections");
       return;
     }
     setSaving(true);
@@ -132,7 +126,8 @@ export function OnboardingWizard({ token, initialData, readOnly, status, employe
         throw new Error(err.error || "Submission failed");
       }
       setSubmitted(true);
-      toast.success("Onboarding form submitted successfully!");
+      toast.success("Your onboarding form has been submitted!");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Submission failed");
     } finally {
@@ -150,119 +145,120 @@ export function OnboardingWizard({ token, initialData, readOnly, status, employe
       if (!res.ok) throw new Error("Upload failed");
       const uploaded = await res.json();
       const current = form.getValues("documents.uploads");
-      const filtered = current.filter((u) => u.documentType !== documentType);
-      form.setValue("documents.uploads", [...filtered, uploaded], { shouldDirty: true });
+      form.setValue("documents.uploads", [...current.filter((u) => u.documentType !== documentType), uploaded], { shouldDirty: true });
       if (documentType === "photo") {
         form.setValue("basic.photographUrl", uploaded.fileUrl, { shouldDirty: true });
       }
-      toast.success("File uploaded");
+      toast.success("Document uploaded successfully");
     } catch {
-      toast.error("Upload failed");
+      toast.error("Upload failed. Please try a smaller file (max 10MB).");
     } finally {
       setUploading(null);
     }
   };
 
+  const currentStepMeta = ONBOARDING_STEPS[step - 1];
+
   if (submitted && !readOnly) {
     return (
-      <Card className="max-w-2xl mx-auto">
-        <CardContent className="py-12 text-center space-y-4">
-          <CheckCircle2 className="h-16 w-16 text-emerald-600 mx-auto" />
-          <h2 className="text-2xl font-semibold text-slate-900">Submission Complete</h2>
-          <p className="text-slate-600">
-            Thank you, {employeeName}! Your onboarding form has been submitted successfully.
-          </p>
-          <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600 text-left max-w-md mx-auto">
-            <p className="font-medium text-slate-800 mb-2">What happens next?</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>HR will review your submission</li>
-              <li>You may be contacted for additional documents</li>
-              <li>HR will process your onboarding and induction</li>
-              <li>You can revisit this link anytime to view your submitted data</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="min-h-screen flex flex-col bg-slate-50">
+        <PortalHeader title="Onboarding Complete" subtitle={`Welcome, ${employeeName}`} />
+        <main className="flex-1 flex items-center justify-center px-4 py-12">
+          <Card className="max-w-lg w-full text-center">
+            <CardContent className="py-12 space-y-5">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+                <CheckCircle2 className="h-9 w-9 text-emerald-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">Thank You!</h2>
+                <p className="text-slate-600 mt-2">
+                  Your onboarding form has been submitted successfully, {employeeName.split(" ")[0]}.
+                </p>
+              </div>
+              <div className="rounded-xl bg-slate-50 border border-slate-100 p-5 text-left text-sm text-slate-600 space-y-2">
+                <p className="font-semibold text-slate-800">What happens next?</p>
+                <ul className="space-y-1.5 list-disc list-inside">
+                  <li>HR will review your submission</li>
+                  <li>You may be contacted for additional documents</li>
+                  <li>Your official email will be assigned by HR</li>
+                  <li>Revisit this link anytime to view your submitted data</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+        <PortalFooter />
+      </div>
     );
   }
 
-  const stepTitle = ONBOARDING_STEPS[step - 1]?.title;
-
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div className="text-center space-y-1">
-        <h1 className="text-2xl font-semibold text-slate-900">UCBS Employee Onboarding</h1>
-        <p className="text-sm text-slate-600">
-          Welcome, {employeeName}
-          {readOnly && " — View only"}
-        </p>
-      </div>
-
-      <StepIndicator
-        currentStep={step}
-        readOnly={readOnly}
-        onStepClick={(s) => setStep(s)}
+    <div className="min-h-screen flex flex-col bg-slate-50">
+      <PortalHeader
+        title={`Welcome, ${employeeName}`}
+        subtitle="Employee Onboarding Form"
+        badge={
+          readOnly ? (
+            <Badge className="bg-blue-100 text-blue-800">
+              <Eye className="h-3 w-3 mr-1" /> View Only
+            </Badge>
+          ) : saving ? (
+            <Badge className="bg-slate-100 text-slate-600">
+              <Cloud className="h-3 w-3 mr-1" /> Saving...
+            </Badge>
+          ) : (
+            <Badge className="bg-emerald-50 text-emerald-700">
+              <Cloud className="h-3 w-3 mr-1" /> Auto-saved
+            </Badge>
+          )
+        }
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{stepTitle}</CardTitle>
-          {saving && (
-            <p className="text-xs text-slate-500 flex items-center gap-1">
-              <Loader2 className="h-3 w-3 animate-spin" /> Saving draft...
-            </p>
-          )}
-        </CardHeader>
-        <CardContent>
-          {step === 1 && (
-            <StepBasic
-              form={form}
-              readOnly={readOnly}
-              uploading={!!uploading}
-              onPhotoUpload={(file) => handleUpload("photo", file)}
-            />
-          )}
-          {step === 2 && <StepPersonal form={form} readOnly={readOnly} />}
-          {step === 3 && <StepIdentification form={form} readOnly={readOnly} />}
-          {step === 4 && <StepEducation form={form} readOnly={readOnly} />}
-          {step === 5 && <StepEmployment form={form} readOnly={readOnly} />}
-          {step === 6 && <StepProfessional form={form} readOnly={readOnly} />}
-          {step === 7 && (
-            <StepDocuments
-              form={form}
-              readOnly={readOnly}
-              uploading={uploading}
-              onUpload={handleUpload}
-            />
-          )}
-          {step === 8 && <StepAcknowledgements form={form} readOnly={readOnly} />}
-          {step === 9 && (
-            <StepReview form={form} readOnly={readOnly} onEdit={(s) => setStep(s)} />
-          )}
+      <main className="flex-1 mx-auto w-full max-w-4xl px-4 py-8 space-y-6">
+        {!readOnly && step === 1 && (
+          <HelpBanner>
+            Take your time — your progress is saved automatically. You can close this page and return anytime using the same link.
+          </HelpBanner>
+        )}
 
-          <div className="mt-8 flex justify-between border-t border-slate-100 pt-6">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={step === 1}
-              onClick={() => setStep((s) => s - 1)}
-            >
-              Previous
-            </Button>
-            {step < 9 ? (
-              <Button type="button" onClick={handleNext}>
-                Next
+        <StepIndicator currentStep={step} readOnly={readOnly} onStepClick={(s) => setStep(s)} />
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{currentStepMeta?.title}</CardTitle>
+            <CardDescription>{currentStepMeta?.hint}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {step === 1 && <StepBasic form={form} readOnly={readOnly} uploading={!!uploading} onPhotoUpload={(f) => handleUpload("photo", f)} />}
+            {step === 2 && <StepPersonal form={form} readOnly={readOnly} />}
+            {step === 3 && <StepIdentification form={form} readOnly={readOnly} />}
+            {step === 4 && <StepEducation form={form} readOnly={readOnly} />}
+            {step === 5 && <StepEmployment form={form} readOnly={readOnly} />}
+            {step === 6 && <StepProfessional form={form} readOnly={readOnly} />}
+            {step === 7 && <StepDocuments form={form} readOnly={readOnly} uploading={uploading} onUpload={handleUpload} />}
+            {step === 8 && <StepAcknowledgements form={form} readOnly={readOnly} />}
+            {step === 9 && <StepReview form={form} readOnly={readOnly} onEdit={(s) => setStep(s)} />}
+
+            <div className="mt-8 flex items-center justify-between gap-4 border-t border-slate-100 pt-6">
+              <Button type="button" variant="outline" disabled={step === 1} onClick={() => { setStep((s) => s - 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+                <ChevronLeft className="h-4 w-4" /> Previous
               </Button>
-            ) : (
-              !readOnly && (
-                <Button type="button" onClick={handleSubmit} disabled={saving}>
-                  {saving ? "Submitting..." : "Submit Onboarding Form"}
+              {step < 9 ? (
+                <Button type="button" onClick={handleNext}>
+                  Continue <ChevronRight className="h-4 w-4" />
                 </Button>
-              )
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              ) : (
+                !readOnly && (
+                  <Button type="button" size="lg" onClick={handleSubmit} disabled={saving}>
+                    {saving ? "Submitting..." : "Submit Onboarding Form"}
+                  </Button>
+                )
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+      <PortalFooter />
     </div>
   );
 }

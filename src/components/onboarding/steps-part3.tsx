@@ -2,6 +2,7 @@
 
 import { UseFormReturn } from "react-hook-form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormField } from "./form-field";
 import type { OnboardingFormData } from "@/lib/validations/onboarding";
@@ -103,26 +104,27 @@ export function StepReview({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-600 mb-4">
-        Please review your information before submitting. Use Edit to make changes.
-      </p>
+      <div className="rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-900 mb-4">
+        Review each section carefully. Click <strong>Edit</strong> on any section to make changes before submitting.
+      </div>
       {sections.map((s) => (
         <div
           key={s.step}
-          className="flex items-center justify-between rounded-lg border border-slate-200 p-4"
+          className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/50 p-4 hover:border-slate-300 transition-colors"
         >
-          <div>
-            <p className="text-sm font-medium text-slate-900">{s.title}</p>
-            <p className="text-sm text-slate-600">{s.content}</p>
+          <div className="flex items-start gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#e8eef5] text-xs font-semibold text-[#1e3a5f]">
+              {s.step}
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">{s.title}</p>
+              <p className="text-sm text-slate-600 mt-0.5">{s.content || "—"}</p>
+            </div>
           </div>
           {!readOnly && onEdit && (
-            <button
-              type="button"
-              onClick={() => onEdit(s.step)}
-              className="text-sm text-blue-600 hover:underline"
-            >
+            <Button type="button" variant="outline" size="sm" onClick={() => onEdit(s.step)}>
               Edit
-            </button>
+            </Button>
           )}
         </div>
       ))}

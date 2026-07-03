@@ -55,15 +55,15 @@ export const DOCUMENT_TYPES = [
 ] as const;
 
 export const ONBOARDING_STEPS = [
-  { id: 1, title: "Basic Details", key: "basic" },
-  { id: 2, title: "Personal Details", key: "personal" },
-  { id: 3, title: "ID & Bank", key: "identification" },
-  { id: 4, title: "Education", key: "education" },
-  { id: 5, title: "Employment", key: "employment" },
-  { id: 6, title: "Professional", key: "professional" },
-  { id: 7, title: "Documents", key: "documents" },
-  { id: 8, title: "Acknowledgements", key: "acknowledgements" },
-  { id: 9, title: "Review", key: "review" },
+  { id: 1, title: "Basic Details", key: "basic", hint: "Verify your contact and joining information" },
+  { id: 2, title: "Personal Details", key: "personal", hint: "Tell us about yourself and emergency contacts" },
+  { id: 3, title: "ID & Bank", key: "identification", hint: "Government ID and salary account details" },
+  { id: 4, title: "Education", key: "education", hint: "Your academic qualifications" },
+  { id: 5, title: "Employment", key: "employment", hint: "Previous work experience or fresher status" },
+  { id: 6, title: "Professional", key: "professional", hint: "Skills and career highlights" },
+  { id: 7, title: "Documents", key: "documents", hint: "Upload required supporting documents" },
+  { id: 8, title: "Acknowledgements", key: "acknowledgements", hint: "Review policies and sign declarations" },
+  { id: 9, title: "Review", key: "review", hint: "Confirm everything before submitting" },
 ] as const;
 
 export const INDUCTION_ITEMS = [

@@ -131,7 +131,7 @@ export function getDefaultFormValues(employee: {
   reportingManager?: string | null;
   dateOfJoining: Date;
   workLocation: string;
-  officialEmail: string;
+  officialEmail?: string | null;
   personalEmail?: string | null;
   mobileNumber?: string | null;
   alternateMobile?: string | null;

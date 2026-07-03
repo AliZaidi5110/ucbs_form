@@ -77,7 +77,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const appUrl = process.env.APP_URL || "http://localhost:3000";
     const onboardingUrl = `${appUrl}/onboard/${token.token}`;
     await sendOnboardingLinkEmail({
-      to: employee.personalEmail || employee.officialEmail,
+      to: employee.personalEmail || employee.officialEmail || "onboarding@ucbs.com",
       employeeName: employee.fullName,
       onboardingUrl,
     });

@@ -37,11 +37,13 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   await submitOnboarding(tokenRecord.employee.id, parsed.data);
 
-  const email = parsed.data.basic.personalEmail || tokenRecord.employee.officialEmail;
-  await sendSubmissionConfirmationEmail({
-    to: email,
-    employeeName: parsed.data.basic.fullName,
-  });
+  const email = parsed.data.basic.personalEmail || tokenRecord.employee.officialEmail || tokenRecord.employee.personalEmail;
+  if (email) {
+    await sendSubmissionConfirmationEmail({
+      to: email,
+      employeeName: parsed.data.basic.fullName,
+    });
+  }
 
   return NextResponse.json({ success: true });
 }

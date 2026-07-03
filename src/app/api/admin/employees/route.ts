@@ -22,8 +22,8 @@ export async function GET(req: NextRequest) {
         search
           ? {
               OR: [
-                { fullName: { contains: search, mode: "insensitive" } },
-                { employeeId: { contains: search, mode: "insensitive" } },
+                { fullName: { contains: search } },
+                { employeeId: { contains: search } },
               ],
             }
           : {},
@@ -69,6 +69,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid official email format" }, { status: 400 });
   }
 
+  const mobile = String(mobileNumber || "").trim();
+  if (!mobile || !/^[6-9]\d{9}$/.test(mobile)) {
+    return NextResponse.json({ error: "Valid 10-digit mobile number is required" }, { status: 400 });
+  }
+
   const employee = await prisma.employee.create({
     data: {
       employeeId,
@@ -80,7 +85,7 @@ export async function POST(req: NextRequest) {
       workLocation,
       officialEmail: officialEmail ? String(officialEmail).toLowerCase() : null,
       personalEmail: personalEmail || null,
-      mobileNumber: mobileNumber || null,
+      mobileNumber: mobile,
       status: "INVITED",
     },
   });
@@ -97,7 +102,7 @@ export async function POST(req: NextRequest) {
 
   if (sendEmail) {
     await sendOnboardingLinkEmail({
-      to: personalEmail || officialEmail,
+      to: personalEmail || officialEmail || "onboarding@ucbs.com",
       employeeName: fullName,
       onboardingUrl,
     });
