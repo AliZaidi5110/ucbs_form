@@ -251,7 +251,7 @@ export function StepIdentification({
         <FormField label="Account Holder Name" error={errors.identification?.accountHolderName?.message}>
           <Input {...register("identification.accountHolderName")} readOnly={readOnly} />
         </FormField>
-        <FormField label="Account Number (optional)" error={errors.identification?.accountNumber?.message}>
+        <FormField label="Account Number" required error={errors.identification?.accountNumber?.message}>
           <Input {...register("identification.accountNumber")} readOnly={readOnly} />
         </FormField>
         <FormField label="IFSC Code" error={errors.identification?.ifscCode?.message}>

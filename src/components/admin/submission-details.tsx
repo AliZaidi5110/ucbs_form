@@ -59,7 +59,7 @@ export function SubmissionDetails({ data }: { data: OnboardingFormData }) {
           <DetailItem label="ESIC" value={data.identification.esic} />
           <DetailItem label="Bank Name" value={data.identification.bankName} />
           <DetailItem label="Account Holder" value={data.identification.accountHolderName} />
-          <DetailItem label="Account Number" value={maskId(data.identification.accountNumber, 4)} mono />
+          <DetailItem label="Account Number" value={data.identification.accountNumber || "—"} mono />
           <DetailItem label="IFSC" value={data.identification.ifscCode} mono />
           <DetailItem label="Branch" value={data.identification.branch} />
         </DetailGrid>
@@ -141,11 +141,4 @@ export function SubmissionDetails({ data }: { data: OnboardingFormData }) {
       </DetailSection>
     </div>
   );
-}
-
-function maskId(value: string | undefined, visible = 4) {
-  if (!value) return "—";
-  if (!value) return "—";
-  if (value.length <= visible) return "*".repeat(value.length);
-  return "*".repeat(value.length - visible) + value.slice(-visible);
 }

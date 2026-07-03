@@ -178,7 +178,7 @@ export const onboardingFormSchema = z.object({
     esic: optionalString,
     bankName: optionalString,
     accountHolderName: optionalString,
-    accountNumber: optionalString,
+    accountNumber: z.string().min(1, "Account number is required"),
     ifscCode: z
       .string()
       .regex(ifscRegex, "Invalid IFSC code")

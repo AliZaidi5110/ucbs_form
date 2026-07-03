@@ -93,10 +93,10 @@ export function generateOnboardingPDF(employee: EmployeeRecord): Buffer {
   y += 4;
 
   addSection("Identification & Bank");
-  addField("Aadhaar:", d.identification.aadhaarNumber?.replace(/\d(?=\d{4})/g, "*"));
+  addField("Aadhaar:", d.identification.aadhaarNumber);
   addField("PAN:", d.identification.panNumber);
   addField("Bank:", d.identification.bankName);
-  addField("Account:", d.identification.accountNumber?.replace(/\d(?=\d{4})/g, "*"));
+  addField("Account:", d.identification.accountNumber);
   addField("IFSC:", d.identification.ifscCode);
   y += 4;
 
