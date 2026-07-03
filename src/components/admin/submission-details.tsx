@@ -140,7 +140,8 @@ export function SubmissionDetails({ data }: { data: OnboardingFormData }) {
   );
 }
 
-function maskId(value: string, visible = 4) {
+function maskId(value: string | undefined, visible = 4) {
+  if (!value) return "—";
   if (!value) return "—";
   if (value.length <= visible) return "*".repeat(value.length);
   return "*".repeat(value.length - visible) + value.slice(-visible);

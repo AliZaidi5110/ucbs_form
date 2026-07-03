@@ -1,21 +1,23 @@
-import { PrismaClient } from "@prisma/client";
+import { getSupabaseAdmin } from "../src/lib/supabase";
 
 async function main() {
-  const prisma = new PrismaClient();
-  const token = await prisma.onboardingToken.findFirst({
-    where: { isActive: true },
-    include: { employee: true },
-    orderBy: { createdAt: "desc" },
-  });
+  const supabase = getSupabaseAdmin();
+  const { data: token } = await supabase
+    .from("onboarding_tokens")
+    .select("token, employees(full_name, employee_id)")
+    .eq("is_active", true)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-  if (token) {
-    console.log(`http://localhost:3000/onboard/${token.token}`);
-    console.log(`Employee: ${token.employee.fullName} (${token.employee.employeeId})`);
-  } else {
+  if (!token) {
     console.log("No active onboarding link found. Run: npm run db:seed");
+    process.exit(1);
   }
 
-  await prisma.$disconnect();
+  const appUrl = process.env.APP_URL || "http://localhost:3000";
+  console.log(`Onboarding link: ${appUrl}/onboard/${token.token}`);
 }
 
-main();
+main().catch(console.error);

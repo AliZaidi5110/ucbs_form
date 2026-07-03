@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { FormField, FormGrid } from "./form-field";
 import { WORK_LOCATIONS } from "@/lib/constants";
 import type { OnboardingFormData } from "@/lib/validations/onboarding";
+import { PhotoUploadField } from "./photo-upload";
 import {
   Select,
   SelectContent,
@@ -12,6 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const readOnlyFieldClass = "bg-slate-50 cursor-default pointer-events-none select-none";
 
 export function StepBasic({
   form,
@@ -31,24 +34,20 @@ export function StepBasic({
     <div className="space-y-6">
       <FormGrid>
         <FormField label="Employee ID" error={errors.basic?.employeeId?.message}>
-          <Input {...register("basic.employeeId")} readOnly className="bg-slate-50" />
+          <Input {...register("basic.employeeId")} readOnly tabIndex={-1} className={readOnlyFieldClass} />
         </FormField>
         <FormField label="Full Name" required error={errors.basic?.fullName?.message}>
           <Input {...register("basic.fullName")} readOnly={readOnly} />
         </FormField>
         <FormField label="Reporting Manager" error={errors.basic?.reportingManager?.message}>
-          <Input {...register("basic.reportingManager")} readOnly={readOnly} />
+          <Input {...register("basic.reportingManager")} readOnly tabIndex={-1} className={readOnlyFieldClass} />
         </FormField>
         <FormField label="Date of Joining" required error={errors.basic?.dateOfJoining?.message}>
-          <Input type="date" {...register("basic.dateOfJoining")} readOnly={readOnly} />
+          <Input type="date" {...register("basic.dateOfJoining")} readOnly tabIndex={-1} className={readOnlyFieldClass} />
         </FormField>
         <FormField label="Work Location" required error={errors.basic?.workLocation?.message}>
-          <Select
-            disabled={readOnly}
-            value={watch("basic.workLocation")}
-            onValueChange={(v) => setValue("basic.workLocation", v, { shouldDirty: true })}
-          >
-            <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
+          <Select disabled value={watch("basic.workLocation")}>
+            <SelectTrigger className={readOnlyFieldClass}><SelectValue placeholder="Select location" /></SelectTrigger>
             <SelectContent>
               {WORK_LOCATIONS.map((l) => (
                 <SelectItem key={l} value={l}>{l}</SelectItem>
@@ -59,7 +58,8 @@ export function StepBasic({
         <FormField label="Official Email (assigned by HR)" error={errors.basic?.officialEmail?.message}>
           <Input
             readOnly
-            className="bg-slate-50"
+            tabIndex={-1}
+            className={readOnlyFieldClass}
             placeholder="Pending — HR will assign your official email"
             value={watch("basic.officialEmail") || ""}
           />
@@ -80,21 +80,19 @@ export function StepBasic({
         </FormField>
       </FormGrid>
 
-      <FormField label="Photograph">
-        {photoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={photoUrl} alt="Employee" className="mb-2 h-24 w-24 rounded-lg object-cover border" />
-        )}
-        {!readOnly && onPhotoUpload && (
-          <Input
-            type="file"
-            accept="image/*"
-            disabled={uploading}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) onPhotoUpload(file);
-            }}
+      <FormField label="Passport Photograph" required error={errors.basic?.photographUrl?.message}>
+        {!readOnly && onPhotoUpload ? (
+          <PhotoUploadField
+            photoUrl={photoUrl}
+            readOnly={readOnly}
+            uploading={uploading}
+            onUpload={onPhotoUpload}
           />
+        ) : photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photoUrl} alt="Employee" className="h-28 w-28 rounded-lg object-cover border" />
+        ) : (
+          <p className="text-sm text-slate-500">No photo uploaded</p>
         )}
       </FormField>
     </div>
@@ -116,10 +114,10 @@ export function StepPersonal({
   return (
     <div className="space-y-6">
       <FormGrid>
-        <FormField label="Date of Birth" required error={errors.personal?.dateOfBirth?.message}>
+        <FormField label="Date of Birth" error={errors.personal?.dateOfBirth?.message}>
           <Input type="date" {...register("personal.dateOfBirth")} readOnly={readOnly} />
         </FormField>
-        <FormField label="Gender" required error={errors.personal?.gender?.message}>
+        <FormField label="Gender" error={errors.personal?.gender?.message}>
           <Select
             disabled={readOnly}
             value={gender}
@@ -143,7 +141,7 @@ export function StepPersonal({
             <Input {...register("personal.genderSelfDescribe")} readOnly={readOnly} />
           </FormField>
         )}
-        <FormField label="Marital Status" required error={errors.personal?.maritalStatus?.message}>
+        <FormField label="Marital Status" error={errors.personal?.maritalStatus?.message}>
           <Select
             disabled={readOnly}
             value={watch("personal.maritalStatus")}
@@ -163,15 +161,15 @@ export function StepPersonal({
             </SelectContent>
           </Select>
         </FormField>
-        <FormField label="Blood Group" required error={errors.personal?.bloodGroup?.message}>
+        <FormField label="Blood Group" error={errors.personal?.bloodGroup?.message}>
           <Input {...register("personal.bloodGroup")} placeholder="e.g. O+" readOnly={readOnly} />
         </FormField>
-        <FormField label="Nationality" required error={errors.personal?.nationality?.message}>
+        <FormField label="Nationality" error={errors.personal?.nationality?.message}>
           <Input {...register("personal.nationality")} readOnly={readOnly} />
         </FormField>
       </FormGrid>
 
-      <FormField label="Current Address" required error={errors.personal?.currentAddress?.message}>
+      <FormField label="Current Address" error={errors.personal?.currentAddress?.message}>
         <Input {...register("personal.currentAddress")} readOnly={readOnly} />
       </FormField>
 
@@ -190,7 +188,7 @@ export function StepPersonal({
         Permanent address same as current
       </label>
 
-      <FormField label="Permanent Address" required error={errors.personal?.permanentAddress?.message}>
+      <FormField label="Permanent Address" error={errors.personal?.permanentAddress?.message}>
         <Input
           {...register("personal.permanentAddress")}
           readOnly={readOnly || sameAsCurrent}
@@ -199,13 +197,13 @@ export function StepPersonal({
       </FormField>
 
       <FormGrid>
-        <FormField label="Emergency Contact Name" required error={errors.personal?.emergencyContactName?.message}>
+        <FormField label="Emergency Contact Name" error={errors.personal?.emergencyContactName?.message}>
           <Input {...register("personal.emergencyContactName")} readOnly={readOnly} />
         </FormField>
-        <FormField label="Emergency Contact Number" required error={errors.personal?.emergencyContactPhone?.message}>
+        <FormField label="Emergency Contact Number" error={errors.personal?.emergencyContactPhone?.message}>
           <Input {...register("personal.emergencyContactPhone")} maxLength={10} readOnly={readOnly} />
         </FormField>
-        <FormField label="Relationship" required error={errors.personal?.emergencyRelationship?.message}>
+        <FormField label="Relationship" error={errors.personal?.emergencyRelationship?.message}>
           <Input {...register("personal.emergencyRelationship")} readOnly={readOnly} />
         </FormField>
       </FormGrid>
@@ -225,10 +223,10 @@ export function StepIdentification({
   return (
     <div className="space-y-6">
       <FormGrid>
-        <FormField label="Aadhaar Number" required error={errors.identification?.aadhaarNumber?.message}>
+        <FormField label="Aadhaar Number (optional)" error={errors.identification?.aadhaarNumber?.message}>
           <Input {...register("identification.aadhaarNumber")} maxLength={12} readOnly={readOnly} />
         </FormField>
-        <FormField label="PAN Number" required error={errors.identification?.panNumber?.message}>
+        <FormField label="PAN Number (optional)" error={errors.identification?.panNumber?.message}>
           <Input
             {...register("identification.panNumber")}
             maxLength={10}
@@ -247,19 +245,19 @@ export function StepIdentification({
       <hr className="border-slate-200" />
 
       <FormGrid>
-        <FormField label="Bank Name" required error={errors.identification?.bankName?.message}>
+        <FormField label="Bank Name (optional)" error={errors.identification?.bankName?.message}>
           <Input {...register("identification.bankName")} readOnly={readOnly} />
         </FormField>
-        <FormField label="Account Holder Name" required error={errors.identification?.accountHolderName?.message}>
+        <FormField label="Account Holder Name (optional)" error={errors.identification?.accountHolderName?.message}>
           <Input {...register("identification.accountHolderName")} readOnly={readOnly} />
         </FormField>
-        <FormField label="Account Number" required error={errors.identification?.accountNumber?.message}>
+        <FormField label="Account Number (optional)" error={errors.identification?.accountNumber?.message}>
           <Input {...register("identification.accountNumber")} readOnly={readOnly} />
         </FormField>
-        <FormField label="IFSC Code" required error={errors.identification?.ifscCode?.message}>
+        <FormField label="IFSC Code (optional)" error={errors.identification?.ifscCode?.message}>
           <Input {...register("identification.ifscCode")} className="uppercase" readOnly={readOnly} />
         </FormField>
-        <FormField label="Branch" required error={errors.identification?.branch?.message}>
+        <FormField label="Branch (optional)" error={errors.identification?.branch?.message}>
           <Input {...register("identification.branch")} readOnly={readOnly} />
         </FormField>
       </FormGrid>

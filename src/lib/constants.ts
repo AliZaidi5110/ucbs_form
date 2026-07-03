@@ -41,17 +41,19 @@ export const ACCESS_OPTIONS = [
   "Other",
 ] as const;
 
+export const REQUIRED_DOCUMENT_TYPES = ["aadhaar", "photo", "resume"] as const;
+
 export const DOCUMENT_TYPES = [
-  { key: "aadhaar", label: "Aadhaar Card" },
-  { key: "pan", label: "PAN Card" },
-  { key: "photo", label: "Passport Photo" },
-  { key: "education", label: "Educational Certificates" },
-  { key: "experience", label: "Experience Letters" },
-  { key: "relieving", label: "Relieving Letter" },
-  { key: "salary", label: "Salary Slips" },
-  { key: "bank", label: "Cancelled Cheque / Bank Proof" },
-  { key: "resume", label: "Resume" },
-  { key: "other", label: "Other" },
+  { key: "aadhaar", label: "Aadhaar Card", required: true },
+  { key: "photo", label: "Passport Photo", required: true },
+  { key: "resume", label: "Resume", required: true },
+  { key: "pan", label: "PAN Card", required: false },
+  { key: "education", label: "Educational Certificates", required: false },
+  { key: "experience", label: "Experience Letters", required: false },
+  { key: "relieving", label: "Relieving Letter", required: false },
+  { key: "salary", label: "Salary Slips", required: false },
+  { key: "bank", label: "Cancelled Cheque / Bank Proof", required: false },
+  { key: "other", label: "Other", required: false },
 ] as const;
 
 export const ONBOARDING_STEPS = [

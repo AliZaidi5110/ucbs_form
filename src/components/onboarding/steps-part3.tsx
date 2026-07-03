@@ -86,20 +86,21 @@ export function StepReview({
   const data = form.getValues();
 
   const sections = [
-    { step: 1, title: "Basic Details", content: data.basic.fullName },
-    { step: 2, title: "Personal Details", content: `${data.personal.nationality} · DOB: ${data.personal.dateOfBirth}` },
-    { step: 3, title: "ID & Bank", content: `PAN: ${data.identification.panNumber}` },
-    { step: 4, title: "Education", content: `${data.education.entries.length} record(s)` },
+    { step: 1, title: "Basic Details", content: data.basic.fullName, editable: true },
+    { step: 2, title: "Personal Details", content: `${data.personal.nationality || "—"} · DOB: ${data.personal.dateOfBirth || "—"}`, editable: true },
+    { step: 3, title: "ID & Bank", content: data.identification.panNumber ? `PAN: ${data.identification.panNumber}` : "Optional details", editable: true },
+    { step: 4, title: "Education", content: `${data.education.entries.length} record(s)`, editable: true },
     {
       step: 5,
       title: "Employment",
       content: data.employment.isFresher
         ? "Fresher"
         : `${data.employment.entries.length} record(s)`,
+      editable: true,
     },
-    { step: 6, title: "Professional", content: data.professional.keySkills.join(", ") || "—" },
-    { step: 7, title: "Documents", content: `${data.documents.uploads.length} file(s) uploaded` },
-    { step: 8, title: "Acknowledgements", content: "All policies acknowledged" },
+    { step: 6, title: "Professional", content: data.professional.keySkills.join(", ") || "Optional", editable: true },
+    { step: 7, title: "Documents", content: `${data.documents.uploads.length} file(s) uploaded`, editable: true },
+    { step: 8, title: "Acknowledgements", content: "All policies acknowledged", editable: true },
   ];
 
   return (
@@ -121,7 +122,7 @@ export function StepReview({
               <p className="text-sm text-slate-600 mt-0.5">{s.content || "—"}</p>
             </div>
           </div>
-          {!readOnly && onEdit && (
+          {!readOnly && onEdit && s.editable && (
             <Button type="button" variant="outline" size="sm" onClick={() => onEdit(s.step)}>
               Edit
             </Button>

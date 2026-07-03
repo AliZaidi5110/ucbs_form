@@ -46,6 +46,24 @@ export function OnboardingWizard({ token, initialData, readOnly, status, employe
     mode: "onBlur",
   });
 
+  const saveStep = useCallback(
+    async (stepNum: number, data: OnboardingFormData) => {
+      if (readOnly) return;
+      const sectionKeys: Record<number, keyof OnboardingFormData> = {
+        1: "basic", 2: "personal", 3: "identification", 4: "education",
+        5: "employment", 6: "professional", 7: "documents", 8: "acknowledgements",
+      };
+      const key = sectionKeys[stepNum];
+      if (!key) return;
+      await fetch(`/api/onboard/${token}/steps/${stepNum}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stepData: data[key], fullDraft: data }),
+      });
+    },
+    [token, readOnly]
+  );
+
   const saveDraft = useCallback(
     async (data: OnboardingFormData) => {
       if (readOnly) return;
@@ -104,7 +122,9 @@ export function OnboardingWizard({ token, initialData, readOnly, status, employe
       return;
     }
     if (!(await validateStep(step))) return;
-    await saveDraft(form.getValues());
+    const values = form.getValues();
+    await saveStep(step, values);
+    await saveDraft(values);
     setStep((s) => Math.min(s + 1, 9));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

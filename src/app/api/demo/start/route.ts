@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getTokenExpiryDate } from "@/lib/rate-limit";
+import { generateUcbsEmployeeId } from "@/lib/employee-id";
+import { createEmployeeRecord } from "@/lib/onboarding-service";
 
 export async function POST(req: Request) {
   if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_ONBOARDING !== "true") {
@@ -24,37 +24,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Please enter a valid 10-digit mobile number" }, { status: 400 });
   }
 
-  const suffix = Date.now().toString(36).toUpperCase();
-  const employeeId = `DEMO-${suffix}`;
-  const slug = personalEmail.split("@")[0].replace(/[^a-z0-9]/gi, ".").slice(0, 20);
-  const joinDate = new Date();
-  joinDate.setDate(joinDate.getDate() + 7);
+  try {
+    const employeeId = await generateUcbsEmployeeId();
+    const joinDate = new Date();
+    joinDate.setDate(joinDate.getDate() + 7);
 
-  const employee = await prisma.employee.create({
-    data: {
+    const { employee, token } = await createEmployeeRecord({
       employeeId,
       fullName,
       department: "Information Technology",
       designation: "New Joinee",
       reportingManager: "HR Team",
-      dateOfJoining: joinDate,
+      dateOfJoining: joinDate.toISOString().split("T")[0],
       workLocation: "Head Office",
-      officialEmail: null,
       personalEmail,
       mobileNumber,
-      status: "INVITED",
-    },
-  });
+    });
 
-  const token = await prisma.onboardingToken.create({
-    data: {
-      employeeId: employee.id,
-      expiresAt: getTokenExpiryDate(),
-    },
-  });
-
-  return NextResponse.json({
-    onboardingUrl: `/onboard/${token.token}`,
-    employeeId,
-  });
+    return NextResponse.json({
+      onboardingUrl: `/onboard/${token}`,
+      employeeId: employee.employeeId,
+    });
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Could not start onboarding" },
+      { status: 500 }
+    );
+  }
 }

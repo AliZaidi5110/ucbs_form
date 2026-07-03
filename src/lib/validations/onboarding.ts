@@ -1,15 +1,17 @@
 import { z } from "zod";
+import { REQUIRED_DOCUMENT_TYPES } from "@/lib/constants";
 
 const mobileRegex = /^[6-9]\d{9}$/;
 const aadhaarRegex = /^\d{12}$/;
 const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+const optionalString = z.string().optional().or(z.literal(""));
 
 export const educationRowSchema = z.object({
-  qualification: z.string().min(1, "Qualification is required"),
-  institution: z.string().min(1, "Institution is required"),
-  year: z.string().min(4, "Valid year required"),
-  percentage: z.string().min(1, "Percentage/CGPA is required"),
+  qualification: optionalString,
+  institution: optionalString,
+  year: optionalString,
+  percentage: optionalString,
 });
 
 export const employmentRowSchema = z.object({
@@ -29,11 +31,23 @@ export const documentUploadSchema = z.object({
   mimeType: z.string().optional(),
 });
 
+const documentsSchema = z
+  .object({
+    uploads: z.array(documentUploadSchema),
+  })
+  .refine(
+    (data) => {
+      const types = new Set(data.uploads.map((u) => u.documentType));
+      return REQUIRED_DOCUMENT_TYPES.every((t) => types.has(t));
+    },
+    { message: "Aadhaar card, passport photo, and resume are required" }
+  );
+
 export const onboardingFormSchema = z.object({
   basic: z.object({
     employeeId: z.string(),
     fullName: z.string().min(2, "Full name is required"),
-    photographUrl: z.string().optional(),
+    photographUrl: z.string().min(1, "Passport photo is required"),
     department: z.string().optional(),
     designation: z.string().optional(),
     reportingManager: z.string().optional(),
@@ -45,53 +59,67 @@ export const onboardingFormSchema = z.object({
     alternateMobile: z.string().regex(mobileRegex, "Enter valid 10-digit number").optional().or(z.literal("")),
   }),
   personal: z.object({
-    dateOfBirth: z.string().min(1, "Date of birth is required"),
+    dateOfBirth: optionalString,
     gender: z.enum(["MALE", "FEMALE", "PREFER_NOT_TO_SAY", "SELF_DESCRIBE"]),
-    genderSelfDescribe: z.string().optional(),
+    genderSelfDescribe: optionalString,
     maritalStatus: z.enum(["SINGLE", "MARRIED", "DIVORCED", "WIDOWED", "OTHER"]),
-    bloodGroup: z.string().min(1, "Blood group is required"),
-    nationality: z.string().min(1, "Nationality is required"),
-    currentAddress: z.string().min(10, "Current address is required"),
-    permanentAddress: z.string().min(10, "Permanent address is required"),
+    bloodGroup: optionalString,
+    nationality: optionalString,
+    currentAddress: optionalString,
+    permanentAddress: optionalString,
     sameAsCurrent: z.boolean(),
-    emergencyContactName: z.string().min(2, "Emergency contact name required"),
-    emergencyContactPhone: z.string().regex(mobileRegex, "Valid emergency contact number required"),
-    emergencyRelationship: z.string().min(1, "Relationship is required"),
+    emergencyContactName: optionalString,
+    emergencyContactPhone: z
+      .string()
+      .regex(mobileRegex, "Enter valid 10-digit number")
+      .optional()
+      .or(z.literal("")),
+    emergencyRelationship: optionalString,
   }),
   identification: z.object({
-    aadhaarNumber: z.string().regex(aadhaarRegex, "Aadhaar must be 12 digits"),
-    panNumber: z.string().regex(panRegex, "Invalid PAN format (e.g. ABCDE1234F)"),
-    uan: z.string().optional(),
-    esic: z.string().optional(),
-    bankName: z.string().min(2, "Bank name is required"),
-    accountHolderName: z.string().min(2, "Account holder name is required"),
-    accountNumber: z.string().min(8, "Valid account number required"),
-    ifscCode: z.string().regex(ifscRegex, "Invalid IFSC code"),
-    branch: z.string().min(2, "Branch is required"),
+    aadhaarNumber: z
+      .string()
+      .regex(aadhaarRegex, "Aadhaar must be 12 digits")
+      .optional()
+      .or(z.literal("")),
+    panNumber: z
+      .string()
+      .regex(panRegex, "Invalid PAN format (e.g. ABCDE1234F)")
+      .optional()
+      .or(z.literal("")),
+    uan: optionalString,
+    esic: optionalString,
+    bankName: optionalString,
+    accountHolderName: optionalString,
+    accountNumber: optionalString,
+    ifscCode: z
+      .string()
+      .regex(ifscRegex, "Invalid IFSC code")
+      .optional()
+      .or(z.literal("")),
+    branch: optionalString,
   }),
   education: z.object({
-    entries: z.array(educationRowSchema).min(1, "Add at least one education entry"),
+    entries: z.array(educationRowSchema),
   }),
   employment: z.object({
     isFresher: z.boolean(),
     entries: z.array(employmentRowSchema),
   }),
   professional: z.object({
-    keySkills: z.array(z.string()).min(1, "Add at least one skill"),
-    totalYearsExperience: z.string().min(1, "Total experience is required"),
-    relevantIndustryExperience: z.string().optional(),
-    majorAchievements: z.string().optional(),
+    keySkills: z.array(z.string()),
+    totalYearsExperience: optionalString,
+    relevantIndustryExperience: optionalString,
+    majorAchievements: optionalString,
   }),
   it: z.object({
     laptopRequired: z.boolean(),
     officialEmailNeeded: z.boolean(),
     simCardRequired: z.boolean(),
     accessRequired: z.array(z.string()),
-    accessOther: z.string().optional(),
+    accessOther: optionalString,
   }),
-  documents: z.object({
-    uploads: z.array(documentUploadSchema),
-  }),
+  documents: documentsSchema,
   acknowledgements: z.object({
     understoodPolicies: z.boolean().refine((v) => v === true, { message: "Required" }),
     maintainConfidentiality: z.boolean().refine((v) => v === true, { message: "Required" }),
@@ -119,7 +147,7 @@ export const stepSchemas = {
     { message: "Add at least one employment entry or mark as fresher", path: ["entries"] }
   ),
   6: onboardingFormSchema.shape.professional,
-  7: onboardingFormSchema.shape.documents,
+  7: documentsSchema,
   8: onboardingFormSchema.shape.acknowledgements,
 } as const;
 
@@ -129,7 +157,7 @@ export function getDefaultFormValues(employee: {
   department: string;
   designation: string;
   reportingManager?: string | null;
-  dateOfJoining: Date;
+  dateOfJoining: Date | string;
   workLocation: string;
   officialEmail?: string | null;
   personalEmail?: string | null;
@@ -137,6 +165,11 @@ export function getDefaultFormValues(employee: {
   alternateMobile?: string | null;
   photographUrl?: string | null;
 }): OnboardingFormData {
+  const joinDate =
+    employee.dateOfJoining instanceof Date
+      ? employee.dateOfJoining.toISOString().split("T")[0]
+      : String(employee.dateOfJoining).split("T")[0];
+
   return {
     basic: {
       employeeId: employee.employeeId,
@@ -145,7 +178,7 @@ export function getDefaultFormValues(employee: {
       department: employee.department,
       designation: employee.designation,
       reportingManager: employee.reportingManager || "",
-      dateOfJoining: employee.dateOfJoining.toISOString().split("T")[0],
+      dateOfJoining: joinDate,
       workLocation: employee.workLocation,
       officialEmail: employee.officialEmail || "",
       personalEmail: employee.personalEmail || "",
@@ -218,9 +251,7 @@ export function mergeDraftWithDefaults(
     basic: { ...defaults.basic, ...draft.basic },
     personal: { ...defaults.personal, ...draft.personal },
     identification: { ...defaults.identification, ...draft.identification },
-    education: draft.education?.entries?.length
-      ? draft.education
-      : defaults.education,
+    education: draft.education?.entries?.length ? draft.education : defaults.education,
     employment: { ...defaults.employment, ...draft.employment },
     professional: { ...defaults.professional, ...draft.professional },
     it: { ...defaults.it, ...draft.it },

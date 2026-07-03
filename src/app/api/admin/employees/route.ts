@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { getTokenExpiryDate } from "@/lib/rate-limit";
+import { listEmployees, createEmployeeRecord } from "@/lib/onboarding-service";
+import { generateUcbsEmployeeId } from "@/lib/employee-id";
 import { sendOnboardingLinkEmail } from "@/lib/email";
 
 export async function GET(req: NextRequest) {
@@ -12,29 +11,10 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = req.nextUrl;
-  const search = searchParams.get("search") || "";
-  const department = searchParams.get("department") || "";
-  const status = searchParams.get("status") || "";
-
-  const employees = await prisma.employee.findMany({
-    where: {
-      AND: [
-        search
-          ? {
-              OR: [
-                { fullName: { contains: search } },
-                { employeeId: { contains: search } },
-              ],
-            }
-          : {},
-        department ? { department } : {},
-        status ? { status: status as "INVITED" | "IN_PROGRESS" | "SUBMITTED" | "VERIFIED" } : {},
-      ],
-    },
-    orderBy: { createdAt: "desc" },
-    include: {
-      tokens: { where: { isActive: true }, take: 1 },
-    },
+  const employees = await listEmployees({
+    search: searchParams.get("search") || "",
+    department: searchParams.get("department") || "",
+    status: searchParams.get("status") || "",
   });
 
   return NextResponse.json(employees);
@@ -48,7 +28,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const {
-    employeeId,
+    employeeId: inputEmployeeId,
     fullName,
     department,
     designation,
@@ -61,8 +41,13 @@ export async function POST(req: NextRequest) {
     sendEmail = true,
   } = body;
 
-  if (!employeeId || !fullName || !department || !designation || !dateOfJoining || !workLocation) {
+  if (!fullName || !department || !designation || !dateOfJoining || !workLocation) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+
+  const employeeId = inputEmployeeId?.trim() || (await generateUcbsEmployeeId());
+  if (!/^UCBS-/i.test(employeeId)) {
+    return NextResponse.json({ error: "Employee ID must start with UCBS-" }, { status: 400 });
   }
 
   if (officialEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(officialEmail))) {
@@ -74,39 +59,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Valid 10-digit mobile number is required" }, { status: 400 });
   }
 
-  const employee = await prisma.employee.create({
-    data: {
+  try {
+    const { employee, token } = await createEmployeeRecord({
       employeeId,
       fullName,
       department,
       designation,
-      reportingManager: reportingManager || null,
-      dateOfJoining: new Date(dateOfJoining),
+      reportingManager,
+      dateOfJoining,
       workLocation,
-      officialEmail: officialEmail ? String(officialEmail).toLowerCase() : null,
-      personalEmail: personalEmail || null,
+      officialEmail,
+      personalEmail,
       mobileNumber: mobile,
-      status: "INVITED",
-    },
-  });
-
-  const token = await prisma.onboardingToken.create({
-    data: {
-      employeeId: employee.id,
-      expiresAt: getTokenExpiryDate(),
-    },
-  });
-
-  const appUrl = process.env.APP_URL || "http://localhost:3000";
-  const onboardingUrl = `${appUrl}/onboard/${token.token}`;
-
-  if (sendEmail) {
-    await sendOnboardingLinkEmail({
-      to: personalEmail || officialEmail || "onboarding@ucbs.com",
-      employeeName: fullName,
-      onboardingUrl,
     });
-  }
 
-  return NextResponse.json({ employee, token: token.token, onboardingUrl });
+    const appUrl = process.env.APP_URL || "http://localhost:3000";
+    const onboardingUrl = `${appUrl}/onboard/${token}`;
+
+    if (sendEmail) {
+      await sendOnboardingLinkEmail({
+        to: personalEmail || officialEmail || "onboarding@ucbs.com",
+        employeeName: fullName,
+        onboardingUrl,
+      });
+    }
+
+    return NextResponse.json({ employee, token, onboardingUrl });
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Failed to create employee" },
+      { status: 500 }
+    );
+  }
 }

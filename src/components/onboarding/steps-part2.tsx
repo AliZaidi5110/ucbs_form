@@ -307,7 +307,11 @@ export function StepDocuments({
             className="flex flex-col gap-2 rounded-lg border border-slate-200 p-4 md:flex-row md:items-center md:justify-between"
           >
             <div>
-              <p className="text-sm font-medium">{doc.label}</p>
+              <p className="text-sm font-medium">
+                {doc.label}
+                {doc.required && <span className="text-red-500 ml-1">*</span>}
+                {!doc.required && <span className="text-slate-400 ml-2 text-xs font-normal">(optional)</span>}
+              </p>
               {uploaded && (
                 <a
                   href={uploaded.fileUrl}

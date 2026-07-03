@@ -82,8 +82,13 @@ export function CreateEmployeeDialog({
         <form onSubmit={handleSubmit} className="space-y-4 px-6 py-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>Employee ID *</Label>
-              <Input value={form.employeeId} onChange={(e) => update("employeeId", e.target.value)} required />
+              <Label>Employee ID</Label>
+              <Input
+                value={form.employeeId}
+                onChange={(e) => update("employeeId", e.target.value.toUpperCase())}
+                placeholder="Leave blank to auto-generate (UCBS-2026-0001)"
+              />
+              <p className="text-xs text-slate-500">Must start with UCBS- if entered manually.</p>
             </div>
             <div className="space-y-1.5">
               <Label>Full Name *</Label>

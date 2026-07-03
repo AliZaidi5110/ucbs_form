@@ -4,8 +4,10 @@ A Next.js (App Router) web application that replaces paper/Word onboarding forms
 
 ## Features
 
-- **Token-authenticated joinee portal** — Multi-step onboarding wizard (10 steps) with autosave
-- **Document uploads** — Local storage with signed URLs (S3/UploadThing-ready architecture)
+- **Token-authenticated joinee portal** — 9-step onboarding wizard with autosave and per-step APIs
+- **AWS S3 document storage** — Photos and documents uploaded to S3 via production API routes
+- **Supabase backend** — PostgreSQL database for employees, drafts, submissions, and HR data
+- **Selfie or gallery photo** — Passport photo on Basic Details step
 - **E-signatures & policy acknowledgements** — Typed signatures with auto-captured dates
 - **HR admin dashboard** — Search, filter, status management, induction checklist, IT asset allocation
 - **Export** — Single-record PDF and bulk CSV export
@@ -17,14 +19,16 @@ A Next.js (App Router) web application that replaces paper/Word onboarding forms
 - Next.js 16 (App Router) + TypeScript
 - Tailwind CSS + shadcn/ui-style components
 - React Hook Form + Zod
-- Prisma + PostgreSQL
+- **Supabase** (PostgreSQL)
+- **AWS S3** (file uploads)
 - NextAuth (credentials)
 - Resend (email) + jsPDF (PDF export)
 
 ## Prerequisites
 
 - Node.js 18+
-- PostgreSQL database (local, Docker, or cloud e.g. [Neon](https://neon.tech))
+- [Supabase](https://supabase.com) project (free tier)
+- [AWS](https://aws.amazon.com) account with S3 bucket (free tier eligible)
 
 ## Setup
 
@@ -44,35 +48,35 @@ cp .env.example .env
 
 | Variable | Description |
 |----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
 | `NEXTAUTH_SECRET` | Random 32+ char secret for sessions |
 | `ENCRYPTION_KEY` | 64-char hex string (32 bytes) for AES-256 |
+| `AWS_REGION` | S3 bucket region (e.g. `ap-south-1`) |
+| `AWS_ACCESS_KEY_ID` | IAM user access key with S3 permissions |
+| `AWS_SECRET_ACCESS_KEY` | IAM user secret key |
+| `AWS_S3_BUCKET` | S3 bucket name for uploads |
 | `TOKEN_EXPIRY_DAYS` | Onboarding link expiry (default: 30) |
 | `RESEND_API_KEY` | Optional — emails log to console if empty |
-| `EMAIL_FROM` | Sender address for emails |
 | `APP_URL` | Public app URL for links in emails |
-| `UPLOAD_SECRET` | Secret for signing document URLs |
 
-Generate an encryption key:
+### 3. Create Supabase tables
 
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
+Run the SQL in `supabase/schema.sql` in your Supabase project **SQL Editor**.
 
-### 3. Start PostgreSQL (optional Docker)
+### 4. Configure AWS S3
 
-```bash
-docker compose up -d
-```
+1. Create an S3 bucket (Block Public Access can stay on — the app uses presigned URLs).
+2. Create an IAM user with `s3:PutObject` and `s3:GetObject` on the bucket.
+3. Add the credentials to `.env`.
 
-### 4. Initialize database
+### 5. Seed sample data
 
 ```bash
-npx prisma migrate dev --name init
 npm run db:seed
 ```
 
-### 5. Run development server
+### 6. Run development server
 
 ```bash
 npm run dev
@@ -86,74 +90,37 @@ Open [http://localhost:3000](http://localhost:3000)
 |------|-------|----------|
 | HR Admin | `hr@ucbs.com` | `hradmin123` |
 
-The seed script prints a sample onboarding link for employee **Priya Sharma (UCBS-2026-001)**.
+The seed script prints a sample onboarding link for employee **Priya Sharma (UCBS-2026-0001)**.
+
+## API Routes
+
+| Route | Methods | Description |
+|-------|---------|-------------|
+| `/api/onboard/[token]` | GET | Load form data |
+| `/api/onboard/[token]/draft` | PUT | Autosave full draft |
+| `/api/onboard/[token]/steps/[step]` | PUT | Save individual wizard step (1–8) |
+| `/api/onboard/[token]/upload` | POST | Upload file to S3 |
+| `/api/onboard/[token]/submit` | POST | Final submission |
+| `/api/admin/employees` | GET, POST | List / create employees |
+| `/api/admin/employees/[id]` | GET, PATCH | View / update status, HR fields |
+| `/api/admin/export/csv` | GET | CSV export |
+| `/api/demo/start` | POST | Demo onboarding (UCBS employee IDs) |
+
+## Employee ID format
+
+All employee IDs use the **`UCBS-YYYY-####`** format (e.g. `UCBS-2026-0001`). Demo and HR create flows auto-generate IDs when not provided.
+
+## Required documents
+
+Only these uploads are mandatory: **Aadhaar card**, **passport photo**, and **resume**. All other form fields and documents are optional.
 
 ## Routes
 
 | Route | Description |
 |-------|-------------|
 | `/` | Landing page |
+| `/try` | Start demo onboarding |
 | `/onboard/[token]` | Joinee multi-step form (token auth) |
 | `/admin/login` | HR login |
 | `/admin/dashboard` | Employee list, search, filters, create link |
 | `/admin/employees/[id]` | Full record view, HR fields, PDF export |
-
-## Onboarding Form Steps
-
-1. Basic Details  
-2. Personal Details  
-3. Identification & Bank Details  
-4. Education (repeatable)  
-5. Employment History (fresher/experienced)  
-6. Professional Summary  
-7. IT & Asset Requirements  
-8. Document Upload  
-9. Policy Acknowledgements & Signatures  
-10. Review & Submit  
-
-## HR-Only Fields
-
-Managed in the admin employee detail view (not shown to joinees):
-
-- **Induction Checklist** — HR Orientation, IT Setup, Email, ID Card, Payroll, Attendance, Dept Induction, Safety
-- **IT Asset Allocation** — Asset, Asset ID, Condition, Employee Acknowledgement
-
-## Deployment (Vercel)
-
-1. Push to GitHub and import in Vercel
-2. Add a PostgreSQL database (Vercel Postgres or Neon)
-3. Set all environment variables in Vercel project settings
-4. Run `npx prisma migrate deploy` via build command or CI
-5. Deploy
-
-Add to `package.json` build script if needed:
-
-```json
-"build": "prisma generate && prisma migrate deploy && next build"
-```
-
-## Project Structure
-
-```
-src/
-├── app/                    # App Router pages & API routes
-├── components/
-│   ├── admin/              # HR dashboard components
-│   ├── onboarding/         # Multi-step wizard
-│   └── ui/                 # Shared UI primitives
-├── lib/
-│   ├── validations/        # Zod schemas
-│   ├── auth.ts             # NextAuth config
-│   ├── encryption.ts       # AES-256 field encryption
-│   ├── onboarding-service.ts
-│   ├── pdf.ts              # PDF & CSV export
-│   └── email.ts            # Resend integration
-prisma/
-├── schema.prisma
-└── seed.ts
-uploads/                    # Local file storage (gitignored)
-```
-
-## License
-
-Private — UCBS internal use.

@@ -43,7 +43,7 @@ export function generateOnboardingPDF(employee: EmployeeRecord): Buffer {
     y += 6;
   };
 
-  const addField = (label: string, value: string) => {
+  const addField = (label: string, value: string | undefined) => {
     if (y > 280) {
       doc.addPage();
       y = margin;
@@ -93,10 +93,10 @@ export function generateOnboardingPDF(employee: EmployeeRecord): Buffer {
   y += 4;
 
   addSection("Identification & Bank");
-  addField("Aadhaar:", d.identification.aadhaarNumber.replace(/\d(?=\d{4})/g, "*"));
+  addField("Aadhaar:", d.identification.aadhaarNumber?.replace(/\d(?=\d{4})/g, "*"));
   addField("PAN:", d.identification.panNumber);
   addField("Bank:", d.identification.bankName);
-  addField("Account:", d.identification.accountNumber.replace(/\d(?=\d{4})/g, "*"));
+  addField("Account:", d.identification.accountNumber?.replace(/\d(?=\d{4})/g, "*"));
   addField("IFSC:", d.identification.ifscCode);
   y += 4;
 
