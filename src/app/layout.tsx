@@ -17,8 +17,8 @@ export const metadata: Metadata = {
   title: "UCBS Employee Onboarding Portal",
   description: "Digital employee onboarding for UCBS — forms, documents, and HR management",
   icons: {
-    icon: "/ucbs-logo.png",
-    apple: "/ucbs-logo.png",
+    icon: "/ucbs-brand-logo.png",
+    apple: "/ucbs-brand-logo.png",
   },
 };
 
