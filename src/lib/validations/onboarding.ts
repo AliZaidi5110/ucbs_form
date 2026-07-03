@@ -1,11 +1,18 @@
 import { z } from "zod";
-import { REQUIRED_DOCUMENT_TYPES } from "@/lib/constants";
+import {
+  DOCUMENT_TYPE_KEYS,
+  DOCUMENT_TYPES,
+  REQUIRED_DOCUMENT_TYPES,
+  type DocumentTypeKey,
+} from "@/lib/constants";
 
 const mobileRegex = /^[6-9]\d{9}$/;
 const aadhaarRegex = /^\d{12}$/;
 const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 const optionalString = z.string().optional().or(z.literal(""));
+
+const documentTypeSchema = z.enum(DOCUMENT_TYPE_KEYS);
 
 export const educationRowSchema = z.object({
   qualification: optionalString,
@@ -24,24 +31,104 @@ export const employmentRowSchema = z.object({
 });
 
 export const documentUploadSchema = z.object({
-  documentType: z.string(),
-  fileName: z.string(),
-  fileUrl: z.string(),
-  fileKey: z.string(),
+  documentType: documentTypeSchema,
+  fileName: z.string().min(1, "File name is required"),
+  fileUrl: z.string().min(1, "File URL is required"),
+  fileKey: z.string().min(1, "File key is required"),
   mimeType: z.string().optional(),
 });
 
-const documentsSchema = z
+export type DocumentUploadItem = z.infer<typeof documentUploadSchema>;
+
+const DOCUMENT_LABELS: Record<(typeof REQUIRED_DOCUMENT_TYPES)[number], string> = {
+  aadhaar: "Aadhaar Card",
+  photo: "Passport Photo",
+  resume: "Resume",
+};
+
+export function inferDocumentTypeFromFileKey(fileKey: string): DocumentTypeKey | undefined {
+  const parts = fileKey.split("/");
+  if (parts.length < 2) return undefined;
+  const candidate = parts[1];
+  return DOCUMENT_TYPE_KEYS.includes(candidate as DocumentTypeKey)
+    ? (candidate as DocumentTypeKey)
+    : undefined;
+}
+
+/** Normalize uploads saved before documentType was persisted on the API response. */
+export function normalizeDocumentUploads(
+  uploads: Array<Partial<DocumentUploadItem> & { fileKey?: string }>
+): DocumentUploadItem[] {
+  const normalized: DocumentUploadItem[] = [];
+
+  for (const upload of uploads) {
+    const documentType =
+      upload.documentType && DOCUMENT_TYPE_KEYS.includes(upload.documentType)
+        ? upload.documentType
+        : inferDocumentTypeFromFileKey(upload.fileKey || "");
+
+    if (!documentType || !upload.fileName || !upload.fileUrl || !upload.fileKey) {
+      continue;
+    }
+
+    normalized.push({
+      documentType,
+      fileName: upload.fileName,
+      fileUrl: upload.fileUrl,
+      fileKey: upload.fileKey,
+      mimeType: upload.mimeType,
+    });
+  }
+
+  return normalized;
+}
+
+function isCompleteUpload(
+  upload: DocumentUploadItem | undefined
+): upload is DocumentUploadItem {
+  return !!(
+    upload &&
+    upload.documentType &&
+    upload.fileName &&
+    upload.fileUrl &&
+    upload.fileKey
+  );
+}
+
+function missingDocumentMessage(type: (typeof REQUIRED_DOCUMENT_TYPES)[number]): string {
+  const label = DOCUMENT_LABELS[type];
+  const doc = DOCUMENT_TYPES.find((d) => d.key === type);
+  return `${label} is required — please upload ${doc?.label.toLowerCase() ?? type}`;
+}
+
+export const documentsSchema = z
   .object({
     uploads: z.array(documentUploadSchema),
   })
-  .refine(
-    (data) => {
-      const types = new Set(data.uploads.map((u) => u.documentType));
-      return REQUIRED_DOCUMENT_TYPES.every((t) => types.has(t));
-    },
-    { message: "Aadhaar card, passport photo, and resume are required" }
-  );
+  .superRefine((data, ctx) => {
+    const normalized = normalizeDocumentUploads(data.uploads);
+
+    for (const upload of normalized) {
+      if (!upload.documentType || !DOCUMENT_TYPE_KEYS.includes(upload.documentType)) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Invalid document metadata — please re-upload the file",
+          path: ["uploads"],
+        });
+      }
+    }
+
+    for (const type of REQUIRED_DOCUMENT_TYPES) {
+      const match = normalized.find((u) => u.documentType === type);
+      if (!isCompleteUpload(match)) {
+        ctx.addIssue({
+          code: "custom",
+          message: missingDocumentMessage(type),
+          path: [type],
+        });
+      }
+    }
+  });
 
 export const onboardingFormSchema = z.object({
   basic: z.object({
@@ -247,6 +334,10 @@ export function mergeDraftWithDefaults(
   draft: Partial<OnboardingFormData> | null
 ): OnboardingFormData {
   if (!draft) return defaults;
+  const documents = draft.documents
+    ? { uploads: normalizeDocumentUploads(draft.documents.uploads ?? []) }
+    : defaults.documents;
+
   return {
     basic: { ...defaults.basic, ...draft.basic },
     personal: { ...defaults.personal, ...draft.personal },
@@ -255,7 +346,7 @@ export function mergeDraftWithDefaults(
     employment: { ...defaults.employment, ...draft.employment },
     professional: { ...defaults.professional, ...draft.professional },
     it: { ...defaults.it, ...draft.it },
-    documents: draft.documents || defaults.documents,
+    documents,
     acknowledgements: { ...defaults.acknowledgements, ...draft.acknowledgements },
   };
 }

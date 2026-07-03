@@ -43,6 +43,45 @@ export const ACCESS_OPTIONS = [
 
 export const REQUIRED_DOCUMENT_TYPES = ["aadhaar", "photo", "resume"] as const;
 
+export const DOCUMENT_TYPE_KEYS = [
+  "aadhaar",
+  "photo",
+  "resume",
+  "pan",
+  "education",
+  "experience",
+  "relieving",
+  "salary",
+  "bank",
+  "other",
+] as const;
+
+/** Allowed MIME types per documentType — used by upload API and client hints */
+export const DOCUMENT_MIME_TYPES: Record<
+  (typeof REQUIRED_DOCUMENT_TYPES)[number] | string,
+  readonly string[]
+> = {
+  aadhaar: ["application/pdf", "image/jpeg", "image/png", "image/jpg"],
+  photo: ["image/jpeg", "image/png", "image/jpg"],
+  resume: [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ],
+};
+
+export const DOCUMENT_ACCEPT: Record<(typeof REQUIRED_DOCUMENT_TYPES)[number], string> = {
+  aadhaar: ".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png",
+  photo: ".jpg,.jpeg,.png,image/jpeg,image/png",
+  resume: ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+};
+
+export const DOCUMENT_FORMAT_HINTS: Record<(typeof REQUIRED_DOCUMENT_TYPES)[number], string> = {
+  aadhaar: "PDF, JPG, JPEG, or PNG (max 10MB)",
+  photo: "JPG, JPEG, or PNG (max 10MB)",
+  resume: "PDF, DOC, or DOCX (max 10MB)",
+};
+
 export const DOCUMENT_TYPES = [
   { key: "aadhaar", label: "Aadhaar Card", required: true },
   { key: "photo", label: "Passport Photo", required: true },
@@ -55,6 +94,8 @@ export const DOCUMENT_TYPES = [
   { key: "bank", label: "Cancelled Cheque / Bank Proof", required: false },
   { key: "other", label: "Other", required: false },
 ] as const;
+
+export type DocumentTypeKey = (typeof DOCUMENT_TYPES)[number]["key"];
 
 export const ONBOARDING_STEPS = [
   { id: 1, title: "Basic Details", key: "basic", hint: "Verify your contact and joining information" },

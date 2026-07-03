@@ -14,8 +14,10 @@ import { ONBOARDING_STEPS } from "@/lib/constants";
 import {
   onboardingFormSchema,
   stepSchemas,
+  normalizeDocumentUploads,
   type OnboardingFormData,
 } from "@/lib/validations/onboarding";
+import { REQUIRED_DOCUMENT_TYPES } from "@/lib/constants";
 import { StepBasic, StepPersonal, StepIdentification } from "./steps-part1";
 import {
   StepEducation,
@@ -104,13 +106,42 @@ export function OnboardingWizard({ token, initialData, readOnly, status, employe
       5: "employment", 6: "professional", 7: "documents", 8: "acknowledgements",
     };
     const key = sectionKeys[stepNum];
-    const result = schema.safeParse(form.getValues()[key]);
-    if (!result.success) {
-      result.error.issues.forEach((issue) => {
-        const path = `${key}.${issue.path.join(".")}` as Parameters<typeof form.setError>[0];
-        form.setError(path, { message: issue.message });
+
+    if (stepNum === 7) {
+      REQUIRED_DOCUMENT_TYPES.forEach((type) => {
+        form.clearErrors(`documents.${type}` as Parameters<typeof form.clearErrors>[0]);
       });
-      toast.error("Please complete the required fields highlighted below");
+      form.clearErrors("documents.uploads");
+    }
+
+    let sectionData = form.getValues()[key];
+
+    if (stepNum === 7) {
+      const docData = form.getValues("documents");
+      const normalized = normalizeDocumentUploads(docData.uploads || []);
+      form.setValue("documents.uploads", normalized, { shouldValidate: false });
+      sectionData = { uploads: normalized };
+    }
+
+    const result = schema.safeParse(sectionData);
+    if (!result.success) {
+      let hasDocumentFieldError = false;
+      result.error.issues.forEach((issue) => {
+        const pathParts = issue.path.filter(Boolean);
+        const path =
+          pathParts.length > 0
+            ? (`${key}.${pathParts.join(".")}` as Parameters<typeof form.setError>[0])
+            : (`${key}.uploads` as Parameters<typeof form.setError>[0]);
+        form.setError(path, { message: issue.message });
+        if (stepNum === 7 && pathParts.length === 1 && REQUIRED_DOCUMENT_TYPES.includes(pathParts[0] as typeof REQUIRED_DOCUMENT_TYPES[number])) {
+          hasDocumentFieldError = true;
+        }
+      });
+      if (!hasDocumentFieldError && stepNum === 7) {
+        toast.error("Please upload all required documents highlighted below");
+      } else if (stepNum !== 7) {
+        toast.error("Please complete the required fields highlighted below");
+      }
       return false;
     }
     return true;
@@ -162,16 +193,41 @@ export function OnboardingWizard({ token, initialData, readOnly, status, employe
       fd.append("file", file);
       fd.append("documentType", documentType);
       const res = await fetch(`/api/onboard/${token}/upload`, { method: "POST", body: fd });
-      if (!res.ok) throw new Error("Upload failed");
-      const uploaded = await res.json();
-      const current = form.getValues("documents.uploads");
-      form.setValue("documents.uploads", [...current.filter((u) => u.documentType !== documentType), uploaded], { shouldDirty: true });
-      if (documentType === "photo") {
-        form.setValue("basic.photographUrl", uploaded.fileUrl, { shouldDirty: true });
+      const body = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const msg = typeof body.error === "string" ? body.error : `Upload failed (${res.status})`;
+        console.error("[onboarding upload]", { documentType, status: res.status, body });
+        toast.error(msg);
+        return;
       }
+
+      const record = {
+        documentType: body.documentType || documentType,
+        fileName: body.fileName,
+        fileUrl: body.fileUrl,
+        fileKey: body.fileKey,
+        mimeType: body.mimeType,
+      };
+
+      const current = normalizeDocumentUploads(form.getValues("documents.uploads") || []);
+      form.setValue(
+        "documents.uploads",
+        [...current.filter((u) => u.documentType !== documentType), record],
+        { shouldDirty: true, shouldValidate: true }
+      );
+
+      form.clearErrors(`documents.${documentType}` as Parameters<typeof form.clearErrors>[0]);
+
+      if (documentType === "photo") {
+        form.setValue("basic.photographUrl", record.fileUrl, { shouldDirty: true });
+      }
+
       toast.success("Document uploaded successfully");
-    } catch {
-      toast.error("Upload failed. Please try a smaller file (max 10MB).");
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Upload failed";
+      console.error("[onboarding upload]", error);
+      toast.error(msg);
     } finally {
       setUploading(null);
     }

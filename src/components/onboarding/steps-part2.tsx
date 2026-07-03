@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormField, FormGrid } from "./form-field";
-import { ACCESS_OPTIONS, DOCUMENT_TYPES } from "@/lib/constants";
+import { ACCESS_OPTIONS, DOCUMENT_ACCEPT, DOCUMENT_FORMAT_HINTS, DOCUMENT_TYPES } from "@/lib/constants";
 import type { OnboardingFormData } from "@/lib/validations/onboarding";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -296,45 +296,72 @@ export function StepDocuments({
   uploading?: string | null;
 }) {
   const uploads = form.watch("documents.uploads") || [];
+  const docErrors = form.formState.errors.documents as
+    | Record<string, { message?: string } | undefined>
+    | undefined;
+  const uploadsError = docErrors?.uploads?.message;
 
   return (
     <div className="space-y-3">
+      {uploadsError && (
+        <p className="text-xs text-red-600 rounded-lg border border-red-100 bg-red-50 px-3 py-2">
+          {uploadsError}
+        </p>
+      )}
       {DOCUMENT_TYPES.map((doc) => {
         const uploaded = uploads.find((u) => u.documentType === doc.key);
+        const accept =
+          doc.key in DOCUMENT_ACCEPT
+            ? DOCUMENT_ACCEPT[doc.key as keyof typeof DOCUMENT_ACCEPT]
+            : undefined;
+        const formatHint =
+          doc.key in DOCUMENT_FORMAT_HINTS
+            ? DOCUMENT_FORMAT_HINTS[doc.key as keyof typeof DOCUMENT_FORMAT_HINTS]
+            : "Max 10MB";
+        const fieldError = doc.required ? docErrors?.[doc.key]?.message : undefined;
+
         return (
-          <div
+          <FormField
             key={doc.key}
-            className="flex flex-col gap-2 rounded-lg border border-slate-200 p-4 md:flex-row md:items-center md:justify-between"
+            label={doc.label}
+            required={doc.required}
+            hint={formatHint}
+            error={fieldError}
+            className={fieldError ? "rounded-lg border border-red-200 bg-red-50/40 p-4" : "rounded-lg border border-slate-200 p-4"}
           >
-            <div>
-              <p className="text-sm font-medium">
-                {doc.label}
-                {doc.required && <span className="text-red-500 ml-1">*</span>}
-                {!doc.required && <span className="text-slate-400 ml-2 text-xs font-normal">(optional)</span>}
-              </p>
-              {uploaded && (
-                <a
-                  href={uploaded.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-600 hover:underline"
-                >
-                  {uploaded.fileName}
-                </a>
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 flex-1">
+                {!doc.required && (
+                  <span className="text-xs text-slate-400">(optional)</span>
+                )}
+                {uploaded ? (
+                  <a
+                    href={uploaded.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-xs text-blue-600 hover:underline truncate mt-1"
+                  >
+                    ✓ {uploaded.fileName}
+                  </a>
+                ) : (
+                  <p className="text-xs text-slate-500 mt-1">No file uploaded yet</p>
+                )}
+              </div>
+              {!readOnly && onUpload && (
+                <Input
+                  type="file"
+                  className="max-w-xs"
+                  accept={accept}
+                  disabled={uploading === doc.key}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void onUpload(doc.key, file);
+                    e.target.value = "";
+                  }}
+                />
               )}
             </div>
-            {!readOnly && onUpload && (
-              <Input
-                type="file"
-                className="max-w-xs"
-                disabled={uploading === doc.key}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) onUpload(doc.key, file);
-                }}
-              />
-            )}
-          </div>
+          </FormField>
         );
       })}
     </div>
