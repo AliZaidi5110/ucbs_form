@@ -44,6 +44,7 @@ export const ACCESS_OPTIONS = [
 export const REQUIRED_DOCUMENT_TYPES = ["aadhaar", "photo", "resume"] as const;
 
 export const DOCUMENT_TYPE_KEYS = [
+  "personal",
   "aadhaar",
   "photo",
   "resume",
@@ -61,6 +62,7 @@ export const DOCUMENT_MIME_TYPES: Record<
   (typeof REQUIRED_DOCUMENT_TYPES)[number] | string,
   readonly string[]
 > = {
+  personal: ["image/jpeg", "image/png", "image/jpg"],
   aadhaar: ["application/pdf", "image/jpeg", "image/png", "image/jpg"],
   photo: ["image/jpeg", "image/png", "image/jpg"],
   resume: [

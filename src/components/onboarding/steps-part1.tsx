@@ -80,7 +80,7 @@ export function StepBasic({
         </FormField>
       </FormGrid>
 
-      <FormField label="Passport Photograph" required error={errors.basic?.photographUrl?.message}>
+      <FormField label="Personal Photograph" required error={errors.basic?.photographUrl?.message}>
         {!readOnly && onPhotoUpload ? (
           <PhotoUploadField
             photoUrl={photoUrl}
@@ -245,19 +245,19 @@ export function StepIdentification({
       <hr className="border-slate-200" />
 
       <FormGrid>
-        <FormField label="Bank Name (optional)" error={errors.identification?.bankName?.message}>
+        <FormField label="Bank Name" error={errors.identification?.bankName?.message}>
           <Input {...register("identification.bankName")} readOnly={readOnly} />
         </FormField>
-        <FormField label="Account Holder Name (optional)" error={errors.identification?.accountHolderName?.message}>
+        <FormField label="Account Holder Name" error={errors.identification?.accountHolderName?.message}>
           <Input {...register("identification.accountHolderName")} readOnly={readOnly} />
         </FormField>
         <FormField label="Account Number (optional)" error={errors.identification?.accountNumber?.message}>
           <Input {...register("identification.accountNumber")} readOnly={readOnly} />
         </FormField>
-        <FormField label="IFSC Code (optional)" error={errors.identification?.ifscCode?.message}>
+        <FormField label="IFSC Code" error={errors.identification?.ifscCode?.message}>
           <Input {...register("identification.ifscCode")} className="uppercase" readOnly={readOnly} />
         </FormField>
-        <FormField label="Branch (optional)" error={errors.identification?.branch?.message}>
+        <FormField label="Branch" error={errors.identification?.branch?.message}>
           <Input {...register("identification.branch")} readOnly={readOnly} />
         </FormField>
       </FormGrid>

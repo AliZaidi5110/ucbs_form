@@ -30,6 +30,9 @@ export function SubmissionDetails({ data }: { data: OnboardingFormData }) {
           <DetailItem label="Personal Email" value={data.basic.personalEmail} />
           <DetailItem label="Mobile" value={data.basic.mobileNumber} mono />
           <DetailItem label="Alternate Mobile" value={data.basic.alternateMobile} mono />
+          {data.basic.photographUrl && (
+            <DetailItem label="Personal Photo" value="Uploaded" />
+          )}
         </DetailGrid>
       </DetailSection>
 
@@ -50,7 +53,7 @@ export function SubmissionDetails({ data }: { data: OnboardingFormData }) {
 
       <DetailSection title="Identification & Bank Details">
         <DetailGrid>
-          <DetailItem label="Aadhaar" value={maskId(data.identification.aadhaarNumber, 4)} mono />
+          <DetailItem label="Aadhaar" value={data.identification.aadhaarNumber || "—"} mono />
           <DetailItem label="PAN" value={data.identification.panNumber} mono />
           <DetailItem label="UAN" value={data.identification.uan} />
           <DetailItem label="ESIC" value={data.identification.esic} />

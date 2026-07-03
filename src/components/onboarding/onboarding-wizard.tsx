@@ -219,7 +219,7 @@ export function OnboardingWizard({ token, initialData, readOnly, status, employe
 
       form.clearErrors(`documents.${documentType}` as Parameters<typeof form.clearErrors>[0]);
 
-      if (documentType === "photo") {
+      if (documentType === "personal") {
         form.setValue("basic.photographUrl", record.fileUrl, { shouldDirty: true });
       }
 
@@ -305,7 +305,14 @@ export function OnboardingWizard({ token, initialData, readOnly, status, employe
             <CardDescription>{currentStepMeta?.hint}</CardDescription>
           </CardHeader>
           <CardContent>
-            {step === 1 && <StepBasic form={form} readOnly={readOnly} uploading={!!uploading} onPhotoUpload={(f) => handleUpload("photo", f)} />}
+            {step === 1 && (
+              <StepBasic
+                form={form}
+                readOnly={readOnly}
+                uploading={uploading === "personal"}
+                onPhotoUpload={(f) => handleUpload("personal", f)}
+              />
+            )}
             {step === 2 && <StepPersonal form={form} readOnly={readOnly} />}
             {step === 3 && <StepIdentification form={form} readOnly={readOnly} />}
             {step === 4 && <StepEducation form={form} readOnly={readOnly} />}

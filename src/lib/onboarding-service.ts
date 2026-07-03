@@ -54,11 +54,11 @@ async function refreshDocumentUrls(formData: OnboardingFormData): Promise<Onboar
   );
 
   let photographUrl = formData.basic.photographUrl;
-  const photoUpload = uploads.find((u) => u.documentType === "photo");
-  if (photoUpload) photographUrl = photoUpload.fileUrl;
-  else if (photographUrl && formData.documents.uploads.find((u) => u.documentType === "photo")) {
-    const p = formData.documents.uploads.find((u) => u.documentType === "photo")!;
-    photographUrl = await resolveUploadUrl(photographUrl, p.fileKey);
+  const personalUpload = uploads.find((u) => u.documentType === "personal");
+  if (personalUpload) photographUrl = personalUpload.fileUrl;
+  else if (photographUrl) {
+    const p = formData.documents.uploads.find((u) => u.documentType === "personal");
+    if (p) photographUrl = await resolveUploadUrl(photographUrl, p.fileKey);
   }
 
   return {

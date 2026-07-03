@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AdminHeader } from "./admin-header";
 import { SubmissionDetails } from "./submission-details";
@@ -60,6 +61,7 @@ export function EmployeeDetail({
   formData: OnboardingFormData;
   userName: string;
 }) {
+  const router = useRouter();
   const [tab, setTab] = useState<"submission" | "hr">("submission");
   const [status, setStatus] = useState(employee.status);
   const [officialEmail, setOfficialEmail] = useState(employee.officialEmail || "");
@@ -100,10 +102,19 @@ export function EmployeeDetail({
           ...extra,
         }),
       });
-      if (!res.ok) throw new Error("Save failed");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Save failed");
+
+      if (data.employee?.status) setStatus(data.employee.status);
+      if (data.employee?.hrRemarks !== undefined) setHrRemarks(data.employee.hrRemarks || "");
+      if (data.employee?.officialEmail !== undefined) {
+        setOfficialEmail(data.employee.officialEmail || "");
+      }
+
+      router.refresh();
       toast.success("Changes saved successfully");
-    } catch {
-      toast.error("Failed to save changes");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save changes");
     } finally {
       setSaving(false);
     }
@@ -138,6 +149,7 @@ export function EmployeeDetail({
       });
       if (!res.ok) throw new Error();
       setStatus("IN_PROGRESS");
+      router.refresh();
       toast.success("Form reopened for employee edits");
     } catch {
       toast.error("Failed to reopen form");

@@ -134,7 +134,7 @@ export const onboardingFormSchema = z.object({
   basic: z.object({
     employeeId: z.string(),
     fullName: z.string().min(2, "Full name is required"),
-    photographUrl: z.string().min(1, "Passport photo is required"),
+    photographUrl: z.string().min(1, "Personal photo is required"),
     department: z.string().optional(),
     designation: z.string().optional(),
     reportingManager: z.string().optional(),

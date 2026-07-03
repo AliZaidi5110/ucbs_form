@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, ImagePlus, Loader2 } from "lucide-react";
+import { ImagePlus, Loader2 } from "lucide-react";
 
 export function PhotoUploadField({
   photoUrl,
@@ -15,8 +15,7 @@ export function PhotoUploadField({
   uploading?: boolean;
   onUpload: (file: File) => Promise<void>;
 }) {
-  const selfieRef = useRef<HTMLInputElement>(null);
-  const galleryRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
@@ -29,27 +28,16 @@ export function PhotoUploadField({
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={photoUrl}
-          alt="Employee photograph"
+          alt="Personal photograph"
           className="h-28 w-28 rounded-lg object-cover border border-slate-200"
         />
       )}
       {!readOnly && (
         <div className="flex flex-wrap gap-2">
           <input
-            ref={selfieRef}
+            ref={fileRef}
             type="file"
-            accept="image/*"
-            capture="user"
-            className="hidden"
-            onChange={(e) => {
-              void handleFile(e.target.files?.[0]);
-              e.target.value = "";
-            }}
-          />
-          <input
-            ref={galleryRef}
-            type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/jpg,.jpg,.jpeg,.png"
             className="hidden"
             onChange={(e) => {
               void handleFile(e.target.files?.[0]);
@@ -61,28 +49,20 @@ export function PhotoUploadField({
             variant="outline"
             size="sm"
             disabled={uploading}
-            onClick={() => selfieRef.current?.click()}
+            onClick={() => fileRef.current?.click()}
           >
             {uploading ? (
               <Loader2 className="h-4 w-4 animate-spin mr-1" />
             ) : (
-              <Camera className="h-4 w-4 mr-1" />
+              <ImagePlus className="h-4 w-4 mr-1" />
             )}
-            Take Selfie
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={uploading}
-            onClick={() => galleryRef.current?.click()}
-          >
-            <ImagePlus className="h-4 w-4 mr-1" />
-            Upload from Gallery
+            Upload Personal Photo
           </Button>
         </div>
       )}
-      <p className="text-xs text-slate-500">Passport-size photo is required (JPG or PNG, max 10MB).</p>
+      <p className="text-xs text-slate-500">
+        Upload a clear personal photo (JPG or PNG, max 10MB). Passport-size photo is uploaded separately in the Documents step.
+      </p>
     </div>
   );
 }
