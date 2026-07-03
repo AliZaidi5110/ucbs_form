@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ucbs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ucbs_onboarding
+    ports:
+      - "5432:5432"
+    volumes:
+      - ucbs_pg_data:/var/lib/postgresql/data
+
+volumes:
+  ucbs_pg_data:
