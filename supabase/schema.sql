@@ -204,3 +204,10 @@ DROP TRIGGER IF EXISTS hr_users_updated_at ON hr_users;
 CREATE TRIGGER hr_users_updated_at
   BEFORE UPDATE ON hr_users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Supabase Storage: private bucket for onboarding documents & photos (max 10MB per file)
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('onboarding-documents', 'onboarding-documents', false, 10485760)
+ON CONFLICT (id) DO UPDATE SET
+  public = EXCLUDED.public,
+  file_size_limit = EXCLUDED.file_size_limit;

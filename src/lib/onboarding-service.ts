@@ -1,6 +1,6 @@
 import { getSupabaseAdmin } from "./supabase";
 import { encryptIfPresent, decryptIfPresent } from "./encryption";
-import { resolveUploadUrl } from "./s3";
+import { resolveUploadUrl } from "./supabase-storage";
 import { getTokenExpiryDate } from "./rate-limit";
 import type { OnboardingFormData } from "./validations/onboarding";
 import { getDefaultFormValues, mergeDraftWithDefaults } from "./validations/onboarding";
