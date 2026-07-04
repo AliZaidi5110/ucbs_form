@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server";
 import { generateUcbsEmployeeId } from "@/lib/employee-id";
 import { createEmployeeRecord } from "@/lib/onboarding-service";
+import { isDemoOnboardingAllowed } from "@/lib/demo-onboarding";
 
 export async function POST(req: Request) {
-  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_ONBOARDING !== "true") {
-    return NextResponse.json({ error: "Demo onboarding is disabled in production" }, { status: 403 });
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+
+  if (!isDemoOnboardingAllowed(host)) {
+    return NextResponse.json(
+      {
+        error:
+          "Self-serve onboarding is disabled on this site. Use the link sent by HR, or ask your administrator to enable ALLOW_DEMO_ONBOARDING.",
+      },
+      { status: 403 }
+    );
   }
 
   const body = await req.json();

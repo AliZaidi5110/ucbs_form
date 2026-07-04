@@ -81,7 +81,16 @@ export default function TryOnboardingPage() {
                   />
                   <p className="text-xs text-slate-500">Indian mobile number starting with 6, 7, 8, or 9</p>
                 </div>
-                {error && <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-sm text-red-700">{error}</div>}
+                {error && (
+                  <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-sm text-red-700 space-y-1">
+                    <p>{error}</p>
+                    {error.includes("Supabase") || error.includes("Missing") ? (
+                      <p className="text-xs text-red-600">
+                        The server may be missing Supabase environment variables. Check Vercel project settings.
+                      </p>
+                    ) : null}
+                  </div>
+                )}
                 <Button type="submit" className="w-full" size="lg" disabled={loading}>
                   {loading ? "Starting..." : "Begin Onboarding Form"}
                 </Button>
